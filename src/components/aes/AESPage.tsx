@@ -28,7 +28,7 @@ export function AESPage() {
 
         // Set default placeholder key if empty
         if (!key) {
-            setKey('ilkomunnes202512');
+            setKey('MySecretKey12345');
         }
     }, []);
     const handleEncrypt = async () => {
