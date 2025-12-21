@@ -52,7 +52,7 @@ export function Footer() {
     };
 
     return (
-        <footer className="flex-none glass-effect border-t relative">
+        <footer className="flex-none glass-effect backdrop-blur-md border-t relative">
             {/* Progress Bar */}
             <div
                 className="absolute top-0 left-0 h-[2px] bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all duration-150 ease-out z-20"

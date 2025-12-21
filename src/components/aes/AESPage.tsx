@@ -1,30 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchMatrices } from '../../api/sboxApi';
+import type { AffineMatrixDef } from '../../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export function AESPage() {
-    // Dynamic matrix list from API
-    const [sboxOptions, setSboxOptions] = useState<{ value: string; label: string }[]>([
-        { value: 'KAES', label: 'AES Standard (KAES)' },
-    ]);
-
-    useEffect(() => {
-        fetchMatrices().then(matrices => {
-            const options = matrices.map(m => ({
-                value: m.id,
-                label: m.name,
-            }));
-            if (options.length > 0) {
-                setSboxOptions(options);
-            }
-        }).catch(console.error);
-    }, []);
-
     // Use global store for persistence
     const { aes, setAESState } = useAppStore();
     const { inputData, key, sbox, output, status, errorMsg } = aes;
+    const [matrices, setMatrices] = useState<AffineMatrixDef[]>([]);
 
     // Helper setters
     const setInputData = (val: string) => setAESState({ inputData: val });
@@ -34,6 +19,18 @@ export function AESPage() {
     const setStatus = (val: 'ready' | 'processing' | 'done' | 'error') => setAESState({ status: val });
     const setErrorMsg = (val: string) => setAESState({ errorMsg: val });
 
+    useEffect(() => {
+        const loadMatrices = async () => {
+            const data = await fetchMatrices();
+            setMatrices(data);
+        };
+        loadMatrices();
+
+        // Set default placeholder key if empty
+        if (!key) {
+            setKey('ilkomunnes202512');
+        }
+    }, []);
     const handleEncrypt = async () => {
         if (!inputData.trim()) {
             setErrorMsg('Please enter input data');
@@ -178,8 +175,9 @@ export function AESPage() {
                                 onChange={(e) => setSbox(e.target.value)}
                                 className="w-full h-12 px-4 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
                             >
-                                {sboxOptions.map(s => (
-                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                {matrices.length === 0 && <option value="KAES">AES Standard (KAES)</option>}
+                                {matrices.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name} {s.tags.includes('Standard') ? '(Standard)' : ''}</option>
                                 ))}
                             </select>
                             <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">

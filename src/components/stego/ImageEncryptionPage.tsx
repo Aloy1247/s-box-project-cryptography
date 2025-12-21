@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchMatrices } from '../../api/sboxApi';
+import type { AffineMatrixDef } from '../../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -12,24 +13,7 @@ const initialMetrics = {
 export function ImageEncryptionPage() {
     const encryptRef = useRef<HTMLInputElement>(null);
     const decryptRef = useRef<HTMLInputElement>(null);
-
-    // Dynamic matrix list from API
-    const [sboxOptions, setSboxOptions] = useState<{ value: string; label: string }[]>([
-        { value: 'KAES', label: 'AES Standard' },
-        { value: 'K44', label: 'K44 (Best)' },
-    ]);
-
-    useEffect(() => {
-        fetchMatrices().then(matrices => {
-            const options = matrices.map(m => ({
-                value: m.id,
-                label: m.name,
-            }));
-            if (options.length > 0) {
-                setSboxOptions(options);
-            }
-        }).catch(console.error);
-    }, []);
+    const [matrices, setMatrices] = useState<AffineMatrixDef[]>([]);
 
     // Global Store
     const { imageEncryption, setImageEncryptionState } = useAppStore();
@@ -52,6 +36,13 @@ export function ImageEncryptionPage() {
     const setDecryptStatus = (val: 'ready' | 'processing' | 'done' | 'error') => setImageEncryptionState({ decryptStatus: val });
     const setDecryptError = (val: string) => setImageEncryptionState({ decryptError: val });
 
+    useEffect(() => {
+        fetchMatrices().then(setMatrices);
+        // Set default placeholder key if empty
+        if (!key) {
+            setKey('ilkomunnes202512');
+        }
+    }, []);
     const handleEncrypt = async () => {
         if (!encryptInput || !key.trim()) { setEncryptError('Please select image and enter key'); setEncryptStatus('error'); return; }
         setEncryptStatus('processing'); setEncryptError('');
@@ -163,8 +154,9 @@ export function ImageEncryptionPage() {
                                     onChange={(e) => setSbox(e.target.value)}
                                     className="px-3 py-2.5 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 cursor-pointer"
                                 >
-                                    {sboxOptions.map(s => (
-                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                    {matrices.length === 0 && <option value="KAES">AES Standard (KAES)</option>}
+                                    {matrices.filter(m => m.id !== 'KAES' && m.id !== 'K44').map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
                                 </select>
                             </div>
