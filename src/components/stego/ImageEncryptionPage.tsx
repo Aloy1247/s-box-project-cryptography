@@ -1,18 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-
-const SBOX_OPTIONS = [
-    { value: 'KAES', label: 'AES Standard' },
-    { value: 'K44', label: 'K44 (Best)' },
-    { value: 'K1', label: 'K1' },
-    { value: 'K2', label: 'K2' },
-    { value: 'K3', label: 'K3' },
-    { value: 'K4', label: 'K4' },
-    { value: 'K81', label: 'K81' },
-    { value: 'K111', label: 'K111' },
-    { value: 'K127', label: 'K127' },
-    { value: 'K128', label: 'K128' },
-];
+import { fetchMatrices } from '../../api/sboxApi';
+import type { AffineMatrixDef } from '../../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -24,6 +13,7 @@ const initialMetrics = {
 export function ImageEncryptionPage() {
     const encryptRef = useRef<HTMLInputElement>(null);
     const decryptRef = useRef<HTMLInputElement>(null);
+    const [matrices, setMatrices] = useState<AffineMatrixDef[]>([]);
 
     // Global Store
     const { imageEncryption, setImageEncryptionState } = useAppStore();
@@ -45,6 +35,14 @@ export function ImageEncryptionPage() {
     // Decrypt State helpers
     const setDecryptStatus = (val: 'ready' | 'processing' | 'done' | 'error') => setImageEncryptionState({ decryptStatus: val });
     const setDecryptError = (val: string) => setImageEncryptionState({ decryptError: val });
+
+    useEffect(() => {
+        fetchMatrices().then(setMatrices);
+        // Set default placeholder key if empty
+        if (!key) {
+            setKey('0001020304050607');
+        }
+    }, []);
 
     const handleEncrypt = async () => {
         if (!encryptInput || !key.trim()) { setEncryptError('Please select image and enter key'); setEncryptStatus('error'); return; }
@@ -157,9 +155,13 @@ export function ImageEncryptionPage() {
                                     onChange={(e) => setSbox(e.target.value)}
                                     className="px-3 py-2.5 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 cursor-pointer"
                                 >
-                                    {SBOX_OPTIONS.map(s => (
-                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                    {matrices.length === 0 && <option value="KAES">AES Standard (KAES)</option>}
+                                    {matrices.filter(m => m.id !== 'KAES' && m.id !== 'K44').map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
+                                    {/* Make sure we don't exclude K44 from dropdown if desired, but filtering it out to avoid duplication with button is okay, or just show all */}
+                                    {/* Actually, user might want to select others. Let's just list all except maybe KAES and K44 if they are buttons, but simpler to just list all in dropdown too or filter. */}
+                                    {/* Let's list others. */}
                                 </select>
                             </div>
                         </div>
