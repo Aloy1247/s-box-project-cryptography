@@ -1,15 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchMatrices } from '../../api/sboxApi';
+<<<<<<< HEAD
+=======
 import type { AffineMatrixDef } from '../../types';
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export function AESPage() {
+<<<<<<< HEAD
+    // Dynamic matrix list from API
+    const [sboxOptions, setSboxOptions] = useState<{ value: string; label: string }[]>([
+        { value: 'KAES', label: 'AES Standard (KAES)' },
+    ]);
+
+    useEffect(() => {
+        fetchMatrices().then(matrices => {
+            const options = matrices.map(m => ({
+                value: m.id,
+                label: m.name,
+            }));
+            if (options.length > 0) {
+                setSboxOptions(options);
+            }
+        }).catch(console.error);
+    }, []);
+
+    // Use global store for persistence
+    const { aes, setAESState } = useAppStore();
+    const { inputData, key, sbox, output, status, errorMsg } = aes;
+=======
     // Use global store for persistence
     const { aes, setAESState } = useAppStore();
     const { inputData, key, sbox, output, status, errorMsg } = aes;
     const [matrices, setMatrices] = useState<AffineMatrixDef[]>([]);
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
 
     // Helper setters
     const setInputData = (val: string) => setAESState({ inputData: val });
@@ -19,18 +45,22 @@ export function AESPage() {
     const setStatus = (val: 'ready' | 'processing' | 'done' | 'error') => setAESState({ status: val });
     const setErrorMsg = (val: string) => setAESState({ errorMsg: val });
 
+<<<<<<< HEAD
+=======
     useEffect(() => {
         const loadMatrices = async () => {
-            const data = await fetchMatrices();
-            setMatrices(data);
+             const data = await fetchMatrices();
+             setMatrices(data);
         };
         loadMatrices();
 
         // Set default placeholder key if empty
         if (!key) {
-            setKey('MySecretKey12345');
+            setKey('0001020304050607');
         }
     }, []);
+
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
     const handleEncrypt = async () => {
         if (!inputData.trim()) {
             setErrorMsg('Please enter input data');
@@ -175,141 +205,150 @@ export function AESPage() {
                                 onChange={(e) => setSbox(e.target.value)}
                                 className="w-full h-12 px-4 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
                             >
+<<<<<<< HEAD
+    {
+        sboxOptions.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+=======
                                 {matrices.length === 0 && <option value="KAES">AES Standard (KAES)</option>}
                                 {matrices.map(s => (
                                     <option key={s.id} value={s.id}>{s.name} {s.tags.includes('Standard') ? '(Standard)' : ''}</option>
-                                ))}
-                            </select>
-                            <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            The selected S-box is used in SubBytes and InvSubBytes transformations.
-                        </p>
-                    </div>
-                </div>
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
+        ))
+    }
+                            </select >
+        <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+                        </div >
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+            The selected S-box is used in SubBytes and InvSubBytes transformations.
+        </p>
+                    </div >
+                </div >
 
-                {/* Error Message */}
-                {status === 'error' && errorMsg && (
-                    <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
-                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {errorMsg}
-                    </div>
-                )}
+        {/* Error Message */ }
+    {
+        status === 'error' && errorMsg && (
+            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {errorMsg}
+            </div>
+        )
+    }
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                        onClick={handleEncrypt}
-                        disabled={status === 'processing'}
-                        className="flex-1 flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-bold text-sm tracking-wide shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all active:scale-[0.98] disabled:cursor-not-allowed"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        {status === 'processing' ? 'Processing...' : 'Encrypt'}
-                    </button>
-                    <button
-                        onClick={handleDecrypt}
-                        disabled={status === 'processing'}
-                        className="flex-1 flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 text-slate-900 dark:text-white font-bold text-sm tracking-wide transition-all active:scale-[0.98] disabled:cursor-not-allowed"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                        </svg>
-                        {status === 'processing' ? 'Processing...' : 'Decrypt'}
-                    </button>
-                </div>
+    {/* Action Buttons */ }
+    <div className="flex flex-col sm:flex-row gap-4">
+        <button
+            onClick={handleEncrypt}
+            disabled={status === 'processing'}
+            className="flex-1 flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white font-bold text-sm tracking-wide shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all active:scale-[0.98] disabled:cursor-not-allowed"
+        >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            {status === 'processing' ? 'Processing...' : 'Encrypt'}
+        </button>
+        <button
+            onClick={handleDecrypt}
+            disabled={status === 'processing'}
+            className="flex-1 flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 text-slate-900 dark:text-white font-bold text-sm tracking-wide transition-all active:scale-[0.98] disabled:cursor-not-allowed"
+        >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+            </svg>
+            {status === 'processing' ? 'Processing...' : 'Decrypt'}
+        </button>
+    </div>
 
-                {/* AES Processing Steps */}
-                <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl border p-6 flex flex-col gap-3 spotlight-border">
-                    <div className="flex items-center gap-2 mb-1">
-                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                        </svg>
-                        <h3 className="text-slate-900 dark:text-white text-sm font-bold">AES-128 Processing Steps (10 Rounds)</h3>
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-xs font-mono text-slate-500 dark:text-slate-400 space-y-2">
-                        <div className="flex gap-3">
-                            <span className="text-slate-400 dark:text-slate-600 select-none w-4">01</span>
-                            <span>KeyExpansion <span className="text-slate-400 dark:text-slate-600">// Derives 11 round keys from cipher key</span></span>
-                        </div>
-                        <div className="flex gap-3">
-                            <span className="text-slate-400 dark:text-slate-600 select-none w-4">02</span>
-                            <span>Initial Round <span className="text-slate-400 dark:text-slate-600">// AddRoundKey only</span></span>
-                        </div>
-                        <div className="flex gap-3">
-                            <span className="text-slate-400 dark:text-slate-600 select-none w-4">03</span>
-                            <div className="flex flex-col gap-1">
-                                <span>Main Rounds <span className="text-slate-400 dark:text-slate-600">// Repeated 9 times</span></span>
-                                <ul className="pl-4 border-l border-slate-300 dark:border-slate-700 space-y-1 text-slate-700 dark:text-slate-300">
-                                    <li className="flex items-center gap-2">
-                                        SubBytes
-                                        <span className="text-[10px] text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded tracking-wide font-bold">
-                                            USING {sbox} S-BOX
-                                        </span>
-                                    </li>
-                                    <li>ShiftRows</li>
-                                    <li>MixColumns</li>
-                                    <li>AddRoundKey</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <span className="text-slate-400 dark:text-slate-600 select-none w-4">04</span>
-                            <span>Final Round <span className="text-slate-400 dark:text-slate-600">// SubBytes, ShiftRows, AddRoundKey (no MixColumns)</span></span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                        <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                            Single-block processing without mode of operation (research mode).
-                        </span>
-                    </div>
-                </div>
-
-                {/* Output Section */}
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-end justify-between px-1">
-                        <label className="text-slate-900 dark:text-white text-base font-semibold">Processed Result</label>
-                        <button
-                            onClick={handleCopy}
-                            disabled={!output}
-                            className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-blue-500 disabled:opacity-50 text-xs font-medium transition-colors disabled:cursor-not-allowed"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Copy to Clipboard
-                        </button>
-                    </div>
-                    <div className="relative group">
-                        <textarea
-                            value={output}
-                            readOnly
-                            className="w-full min-h-[120px] p-4 rounded-lg text-sm font-mono bg-slate-900 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-emerald-400 placeholder:text-slate-500 resize-none"
-                            placeholder="Output will appear here..."
-                        />
-                        <div className="absolute top-4 right-4 flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full transition-colors ${status === 'ready' ? 'bg-slate-500' :
-                                status === 'processing' ? 'bg-yellow-500 animate-pulse' :
-                                    status === 'error' ? 'bg-red-500' :
-                                        'bg-emerald-500'
-                                }`} />
-                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                                {status === 'ready' ? 'Ready' :
-                                    status === 'processing' ? 'Processing' :
-                                        status === 'error' ? 'Error' : 'Done'}
+    {/* AES Processing Steps */ }
+    <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl border p-6 flex flex-col gap-3 spotlight-border">
+        <div className="flex items-center gap-2 mb-1">
+            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+            <h3 className="text-slate-900 dark:text-white text-sm font-bold">AES-128 Processing Steps (10 Rounds)</h3>
+        </div>
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-xs font-mono text-slate-500 dark:text-slate-400 space-y-2">
+            <div className="flex gap-3">
+                <span className="text-slate-400 dark:text-slate-600 select-none w-4">01</span>
+                <span>KeyExpansion <span className="text-slate-400 dark:text-slate-600">// Derives 11 round keys from cipher key</span></span>
+            </div>
+            <div className="flex gap-3">
+                <span className="text-slate-400 dark:text-slate-600 select-none w-4">02</span>
+                <span>Initial Round <span className="text-slate-400 dark:text-slate-600">// AddRoundKey only</span></span>
+            </div>
+            <div className="flex gap-3">
+                <span className="text-slate-400 dark:text-slate-600 select-none w-4">03</span>
+                <div className="flex flex-col gap-1">
+                    <span>Main Rounds <span className="text-slate-400 dark:text-slate-600">// Repeated 9 times</span></span>
+                    <ul className="pl-4 border-l border-slate-300 dark:border-slate-700 space-y-1 text-slate-700 dark:text-slate-300">
+                        <li className="flex items-center gap-2">
+                            SubBytes
+                            <span className="text-[10px] text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded tracking-wide font-bold">
+                                USING {sbox} S-BOX
                             </span>
-                        </div>
-                    </div>
+                        </li>
+                        <li>ShiftRows</li>
+                        <li>MixColumns</li>
+                        <li>AddRoundKey</li>
+                    </ul>
                 </div>
             </div>
-        </main>
+            <div className="flex gap-3">
+                <span className="text-slate-400 dark:text-slate-600 select-none w-4">04</span>
+                <span>Final Round <span className="text-slate-400 dark:text-slate-600">// SubBytes, ShiftRows, AddRoundKey (no MixColumns)</span></span>
+            </div>
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+            <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+                Single-block processing without mode of operation (research mode).
+            </span>
+        </div>
+    </div>
+
+    {/* Output Section */ }
+    <div className="flex flex-col gap-3">
+        <div className="flex items-end justify-between px-1">
+            <label className="text-slate-900 dark:text-white text-base font-semibold">Processed Result</label>
+            <button
+                onClick={handleCopy}
+                disabled={!output}
+                className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-blue-500 disabled:opacity-50 text-xs font-medium transition-colors disabled:cursor-not-allowed"
+            >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy to Clipboard
+            </button>
+        </div>
+        <div className="relative group">
+            <textarea
+                value={output}
+                readOnly
+                className="w-full min-h-[120px] p-4 rounded-lg text-sm font-mono bg-slate-900 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-emerald-400 placeholder:text-slate-500 resize-none"
+                placeholder="Output will appear here..."
+            />
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full transition-colors ${status === 'ready' ? 'bg-slate-500' :
+                    status === 'processing' ? 'bg-yellow-500 animate-pulse' :
+                        status === 'error' ? 'bg-red-500' :
+                            'bg-emerald-500'
+                    }`} />
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                    {status === 'ready' ? 'Ready' :
+                        status === 'processing' ? 'Processing' :
+                            status === 'error' ? 'Error' : 'Done'}
+                </span>
+            </div>
+        </div>
+    </div>
+            </div >
+        </main >
     );
 }

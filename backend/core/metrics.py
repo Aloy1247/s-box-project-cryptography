@@ -52,6 +52,23 @@ def walsh_hadamard_transform(func: List[int]) -> List[int]:
         Walsh spectrum (256 values)
     """
     n = len(func)
+<<<<<<< HEAD
+    # Convert 0/1 to 1/-1 and work with float for accuracy
+    wht = np.array([1 - 2 * f for f in func], dtype=np.float64)
+    
+    # Standard iterative butterfly algorithm for WHT
+    h = 1
+    while h < n:
+        for i in range(0, n, h * 2):
+            for j in range(i, i + h):
+                x = wht[j]
+                y = wht[j + h]
+                wht[j] = x + y
+                wht[j + h] = x - y
+        h *= 2
+    
+    return [int(w) for w in wht]
+=======
     wht = np.array(func, dtype=int)
     wht = 1 - 2 * wht  # Convert 0/1 to 1/-1
     
@@ -67,6 +84,7 @@ def walsh_hadamard_transform(func: List[int]) -> List[int]:
         h *= 2
     
     return wht.tolist()
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
 
 
 def compute_nonlinearity(sbox: List[int]) -> int:

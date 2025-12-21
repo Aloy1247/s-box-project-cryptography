@@ -1,7 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchMatrices } from '../../api/sboxApi';
+<<<<<<< HEAD
+=======
 import type { AffineMatrixDef } from '../../types';
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -13,7 +16,28 @@ const initialMetrics = {
 export function ImageEncryptionPage() {
     const encryptRef = useRef<HTMLInputElement>(null);
     const decryptRef = useRef<HTMLInputElement>(null);
+<<<<<<< HEAD
+
+    // Dynamic matrix list from API
+    const [sboxOptions, setSboxOptions] = useState<{ value: string; label: string }[]>([
+        { value: 'KAES', label: 'AES Standard' },
+        { value: 'K44', label: 'K44 (Best)' },
+    ]);
+
+    useEffect(() => {
+        fetchMatrices().then(matrices => {
+            const options = matrices.map(m => ({
+                value: m.id,
+                label: m.name,
+            }));
+            if (options.length > 0) {
+                setSboxOptions(options);
+            }
+        }).catch(console.error);
+    }, []);
+=======
     const [matrices, setMatrices] = useState<AffineMatrixDef[]>([]);
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
 
     // Global Store
     const { imageEncryption, setImageEncryptionState } = useAppStore();
@@ -36,13 +60,17 @@ export function ImageEncryptionPage() {
     const setDecryptStatus = (val: 'ready' | 'processing' | 'done' | 'error') => setImageEncryptionState({ decryptStatus: val });
     const setDecryptError = (val: string) => setImageEncryptionState({ decryptError: val });
 
+<<<<<<< HEAD
+=======
     useEffect(() => {
         fetchMatrices().then(setMatrices);
         // Set default placeholder key if empty
         if (!key) {
-            setKey('MySecretKey12345');
+            setKey('0001020304050607');
         }
     }, []);
+
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
     const handleEncrypt = async () => {
         if (!encryptInput || !key.trim()) { setEncryptError('Please select image and enter key'); setEncryptStatus('error'); return; }
         setEncryptStatus('processing'); setEncryptError('');
@@ -154,16 +182,27 @@ export function ImageEncryptionPage() {
                                     onChange={(e) => setSbox(e.target.value)}
                                     className="px-3 py-2.5 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 cursor-pointer"
                                 >
+<<<<<<< HEAD
+    {
+        sboxOptions.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+        ))
+    }
+=======
                                     {matrices.length === 0 && <option value="KAES">AES Standard (KAES)</option>}
                                     {matrices.filter(m => m.id !== 'KAES' && m.id !== 'K44').map(s => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
-                                </select>
-                            </div>
-                        </div>
+                                    {/* Make sure we don't exclude K44 from dropdown if desired, but filtering it out to avoid duplication with button is okay, or just show all */}
+                                    {/* Actually, user might want to select others. Let's just list all except maybe KAES and K44 if they are buttons, but simpler to just list all in dropdown too or filter. */}
+                                    {/* Let's list others. */}
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
+                                </select >
+                            </div >
+                        </div >
 
-                        {/* Encryption Key - More Prominent */}
-                        <div>
+        {/* Encryption Key - More Prominent */ }
+        < div >
                             <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-3">
                                 Encryption Key
                                 <span className="text-red-500">*</span>
@@ -184,12 +223,12 @@ export function ImageEncryptionPage() {
                                     {key.length > 0 ? `${key.length} chars` : 'padded to 16'}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div >
+                    </div >
+                </div >
 
-                {/* ===== ENCRYPT SECTION ===== */}
-                <section className="relative">
+        {/* ===== ENCRYPT SECTION ===== */ }
+        < section className = "relative" >
                     <div className="absolute -left-3 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full" />
                     <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 ml-2">
                         <div className="flex items-center gap-3 mb-5">
@@ -271,10 +310,10 @@ export function ImageEncryptionPage() {
                         </div>
                         {encryptStatus === 'error' && <p className="text-red-500 text-xs mt-3">{encryptError}</p>}
                     </div>
-                </section>
+                </section >
 
-                {/* ===== DECRYPT SECTION ===== */}
-                <section className="relative">
+        {/* ===== DECRYPT SECTION ===== */ }
+        < section className = "relative" >
                     <div className="absolute -left-3 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full" />
                     <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 ml-2">
                         <div className="flex items-center gap-3 mb-5">
@@ -355,10 +394,10 @@ export function ImageEncryptionPage() {
                         </div>
                         {decryptStatus === 'error' && <p className="text-red-500 text-xs mt-3">{decryptError}</p>}
                     </div>
-                </section>
+                </section >
 
-                {/* ===== ANALYSIS SECTION ===== */}
-                <section className="bg-gradient-to-br from-purple-500/5 to-indigo-500/5 dark:from-purple-500/10 dark:to-indigo-500/10 rounded-2xl border border-purple-200/50 dark:border-purple-500/20 p-6">
+        {/* ===== ANALYSIS SECTION ===== */ }
+        < section className = "bg-gradient-to-br from-purple-500/5 to-indigo-500/5 dark:from-purple-500/10 dark:to-indigo-500/10 rounded-2xl border border-purple-200/50 dark:border-purple-500/20 p-6" >
                     <h3 className="text-slate-900 dark:text-white text-lg font-bold mb-4 flex items-center gap-2">
                         <span className="text-xl">📊</span> Encryption Quality Analysis
                     </h3>
@@ -381,8 +420,8 @@ export function ImageEncryptionPage() {
                             </div>
                         ))}
                     </div>
-                </section>
-            </div>
-        </main>
+                </section >
+            </div >
+        </main >
     );
 }
