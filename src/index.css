@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-left: 1px solid #e2e8f0;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+    border-left: 1px solid #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 6px;
+    border: 3px solid #f1f5f9;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-color: #0f172a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Matrix grid */
+.matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 2px;
+}
+
+/* S-box grid */
+.sbox-grid {
+    display: grid;
+    grid-template-columns: 40px repeat(16, minmax(0, 1fr));
+    gap: 1px;
+}
+
+/* Spinner animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Body base styles */
+body {
+    font-family: "Inter", sans-serif;
+}
+
+/* --- New UI Effects --- */
+
+/* 2. Shine Animation (Active Tabs) */
+@keyframes shine-flow {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.animate-tab-glow {
+    /* Shine Gradient: Blue base -> Bright/White shine -> Blue base */
+    background: linear-gradient(110deg,
+            #3b82f6 40%,
+            #e0f2fe 50%,
+            #3b82f6 60%);
+    background-size: 200% 100%;
+
+    /* Clip background to text to make text shine */
+    background-clip: text;
+    -webkit-background-clip: text;
+
+    /* Make text transparent so background shows through */
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+
+    /* Smooth continuous shine loop */
+    animation: shine-flow 4s ease-in-out infinite;
+}
+
+/* 
+   3. "Flashlight" Border Reveal Effect 
+   Modified to maintain a subtle static border so structure is visible.
+*/
+.spotlight-border {
+    position: relative;
+    /* Static border color (very faint) */
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background-clip: padding-box;
+}
+
+.dark .spotlight-border {
+    border-color: rgba(148, 163, 184, 0.1);
+}
+
+.spotlight-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    z-index: 10;
+
+    /* 
+     Flashlight Gradient 
+     White/Blue intense center, fading quickly.
+  */
+    background: radial-gradient(300px circle at var(--cursor-x) var(--cursor-y),
+            rgba(59, 130, 246, 0.8),
+            transparent 40%) fixed;
+
+    /* Mask to show only border */
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+
+    pointer-events: none;
+    opacity: 1;
+}
+
+/* 4. Simple Blur (Frosted Glass) - Optimized for Performance */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.dark .glass-effect {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+}
+
+/* Text hover effect */
+.text-glow-transition {
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.hover-text-glow:hover,
+.group:hover .group-hover-text-glow {
+    color: #60a5fa;
+    /* blue-400 */
+    text-shadow:
+        0 0 4px rgba(59, 130, 246, 0.8),
+        0 0 12px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes breathing-glow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+        opacity: 0.9;
+    }
+
+    50% {
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        opacity: 1;
+    }
+}
+
+.animate-breathing-glow {
+    animation: breathing-glow 3s ease-in-out infinite;
+}
