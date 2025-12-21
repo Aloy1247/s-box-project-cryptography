@@ -96,8 +96,7 @@
             "id": "K1",
             "name": "K1",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -181,15 +180,13 @@
                     1,
                     0
                 ]
-            ],
-            "note": "Row 8 matches Row 1 in source image, technically making it singular."
+            ]
         },
         {
             "id": "K2",
             "name": "K2",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -279,8 +276,7 @@
             "id": "K3",
             "name": "K3",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -370,8 +366,7 @@
             "id": "K4",
             "name": "K4",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -461,8 +456,7 @@
             "id": "K5",
             "name": "K5",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -552,8 +546,7 @@
             "id": "K6",
             "name": "K6",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -643,8 +636,7 @@
             "id": "K7",
             "name": "K7",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -734,8 +726,7 @@
             "id": "K8",
             "name": "K8",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -825,8 +816,7 @@
             "id": "K9",
             "name": "K9",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -916,8 +906,7 @@
             "id": "K10",
             "name": "K10",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1007,8 +996,7 @@
             "id": "K11",
             "name": "K11",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1098,8 +1086,7 @@
             "id": "K12",
             "name": "K12",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1189,8 +1176,7 @@
             "id": "K13",
             "name": "K13",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1280,8 +1266,7 @@
             "id": "K14",
             "name": "K14",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1371,8 +1356,7 @@
             "id": "K15",
             "name": "K15",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1462,8 +1446,7 @@
             "id": "K16",
             "name": "K16",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1553,8 +1536,7 @@
             "id": "K17",
             "name": "K17",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1644,8 +1626,7 @@
             "id": "K18",
             "name": "K18",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1735,8 +1716,7 @@
             "id": "K19",
             "name": "K19",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1826,8 +1806,7 @@
             "id": "K20",
             "name": "K20",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -1917,8 +1896,7 @@
             "id": "K21",
             "name": "K21",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
@@ -2008,8 +1986,7 @@
             "id": "K22",
             "name": "K22",
             "tags": [
-                "8-bit",
-                "Verified from Image"
+                "8-bit"
             ],
             "status": "final",
             "matrix": [
