@@ -9,8 +9,13 @@ from pathlib import Path
 from typing import List, Optional, Dict
 
 # Path to matrices data file
-DATA_PATH = Path(__file__).parent.parent / "data" / "matrices.json"
-
+# We'll try multiple locations to be robust across different environments (Vercel, Local, Docker)
+CANDIDATE_PATHS = [
+    Path(__file__).parent.parent / "data" / "matrices.json",
+    Path.cwd() / "backend" / "data" / "matrices.json",
+    Path.cwd() / "data" / "matrices.json",
+    Path("backend/data/matrices.json").resolve(),
+]
 
 class MatrixService:
     """Service for managing affine matrices."""
@@ -22,12 +27,24 @@ class MatrixService:
     def _load_matrices(self):
         """Load matrices from JSON file."""
         self._matrices = {}
-        if DATA_PATH.exists():
-            with open(DATA_PATH, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                for m in data.get("matrices", []):
-                    self._matrices[m["id"]] = m
-            print(f"[MatrixService] Loaded {len(self._matrices)} matrices from {DATA_PATH}")
+        
+        data_path = None
+        for path in CANDIDATE_PATHS:
+            if path.exists():
+                data_path = path
+                break
+        
+        if data_path and data_path.exists():
+            try:
+                with open(data_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for m in data.get("matrices", []):
+                        self._matrices[m["id"]] = m
+                print(f"[MatrixService] Loaded {len(self._matrices)} matrices from {data_path}")
+            except Exception as e:
+                print(f"[MatrixService] Failed to load matrices from {data_path}: {e}")
+        else:
+            print(f"[MatrixService] Warning: matrices.json not found in any candidate path: {[str(p) for p in CANDIDATE_PATHS]}")
     
     def reload(self):
         """Force reload matrices from file."""
