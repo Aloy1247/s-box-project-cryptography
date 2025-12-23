@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 import os
+from pathlib import Path
 
 # Ensure the backend directory is in the python path
 # Go up one level from 'api' to project root, where 'backend' folder lives
@@ -26,6 +27,11 @@ app.add_middleware(
 
 app.include_router(api_router)
 
-@app.get("/")
+@app.get("/api")
 async def root():
-    return {"status": "Vercel Backend Running"}
+    return {
+        "status": "Vercel Backend Running",
+        "cwd": os.getcwd(),
+        "files_in_backend_data": [str(p) for p in Path("backend/data").glob("*")] if Path("backend/data").exists() else "backend/data not found",
+        "python_path": sys.path
+    }
