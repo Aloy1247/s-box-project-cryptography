@@ -183,9 +183,60 @@ export function ImageEncryptionPage() {
                 const newMetrics = await ar.json();
                 setImageEncryptionState({ metrics: newMetrics });
             }
+
+            // **AUTO-DECRYPT**: Automatically decrypt after encryption completes
+            setTimeout(() => {
+                autoDecrypt(encryptedFile, blob);
+            }, 500); // Small delay to let UI update
         } catch (e) {
             setEncryptError(e instanceof Error ? e.message : 'Failed');
             setEncryptStatus('error');
+        }
+    };
+
+    const autoDecrypt = async (encryptedFile: File, encryptedBlob: Blob) => {
+        setDecryptStatus('processing'); setDecryptError('');
+
+        try {
+            const formData = new FormData();
+            formData.append('image', encryptedFile);
+            formData.append('key', key);
+
+            if (sbox === 'custom') {
+                if (customSBox) {
+                    formData.append('customSBox', JSON.stringify(customSBox));
+                } else if (customMatrix) {
+                    formData.append('customMatrix', JSON.stringify(customMatrix));
+                    formData.append('constant', constant);
+                }
+            } else {
+                formData.append('sboxId', sbox);
+            }
+
+            const res = await fetch(`${API_BASE_URL}/api/image/decrypt`, { method: 'POST', body: formData });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+
+            const blob = await res.blob();
+            const resultUrl = URL.createObjectURL(blob);
+
+            setImageEncryptionState({
+                decryptResult: resultUrl,
+                decryptStatus: 'done'
+            });
+
+            // Run Analysis (Decrypted = Original, Input = Encrypted)
+            const af = new FormData();
+            af.append('originalImage', blob, 'decrypted.png');
+            af.append('encryptedImage', encryptedBlob);
+
+            const ar = await fetch(`${API_BASE_URL}/api/image/analyze`, { method: 'POST', body: af });
+            if (ar.ok) {
+                const newMetrics = await ar.json();
+                setImageEncryptionState({ metrics: newMetrics });
+            }
+        } catch (e) {
+            setDecryptError(e instanceof Error ? e.message : 'Auto-decrypt failed');
+            setDecryptStatus('error');
         }
     };
 
@@ -315,6 +366,124 @@ export function ImageEncryptionPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* ===== CUSTOM S-BOX UPLOAD SECTION ===== */}
+                <div className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-500/10 dark:to-pink-500/10 rounded-2xl border border-purple-200/50 dark:border-purple-500/20 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center text-white text-lg">📤</div>
+                        <div>
+                            <h3 className="text-slate-900 dark:text-white text-lg font-bold">Upload Custom S-Box</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs">Upload your own S-box for image encryption (CSV, XLSX, or JSON)</p>
+                        </div>
+                    </div>
+
+                    <input
+                        type="file"
+                        accept=".csv,.xlsx,.xls,.json"
+                        onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            try {
+                                const formData = new FormData();
+                                formData.append('file', file);
+
+                                const response = await fetch(`${API_BASE_URL}/api/sbox/validate`, {
+                                    method: 'POST',
+                                    body: formData
+                                });
+
+                                if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.detail?.error || error.detail || 'Validation failed');
+                                }
+
+                                const data = await response.json();
+
+                                if (data.valid && data.sbox) {
+                                    // Store in global state as customSBox
+                                    useAppStore.setState({
+                                        customSBox: data.sbox,
+                                        customSBoxFileName: file.name
+                                    });
+
+                                    // Auto-select custom option
+                                    setImageEncryptionState({ sbox: 'custom' });
+
+                                    alert(`✅ S-box uploaded successfully: ${file.name}`);
+                                } else {
+                                    throw new Error(data.error || 'Invalid S-box format');
+                                }
+                            } catch (error) {
+                                alert(`❌ Upload failed: ${error instanceof Error ? error.message : String(error)}`);
+                            }
+
+                            // Reset input
+                            e.target.value = '';
+                        }}
+                        className="w-full px-4 py-3 rounded-lg text-sm bg-white dark:bg-slate-800 border-2 border-dashed border-purple-300 dark:border-purple-600 text-slate-700 dark:text-slate-300 cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 dark:file:bg-purple-900/30 file:text-purple-700 dark:file:text-purple-300 hover:file:bg-purple-100 dark:hover:file:bg-purple-900/50"
+                    />
+
+                    {/* Display uploaded custom S-box */}
+                    {customSBox && (
+                        <div className="mt-6 bg-white dark:bg-slate-900/50 rounded-xl p-5 border border-purple-200 dark:border-purple-700">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-purple-500 text-xl">✨</span>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Custom S-Box Loaded: {customSBoxFileName || 'Uploaded'}
+                                    </h4>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        useAppStore.setState({
+                                            customSBox: null,
+                                            customSBoxFileName: null
+                                        });
+                                        setImageEncryptionState({ sbox: 'KAES' });
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+
+                            {/* S-box Grid Display - 16x16 */}
+                            <div className="overflow-x-auto">
+                                <div className="inline-grid grid-cols-17 gap-px bg-slate-200 dark:bg-slate-700 p-px rounded-lg min-w-max">
+                                    {/* Header row */}
+                                    <div className="bg-purple-100 dark:bg-purple-900/30 font-mono text-[10px] font-bold text-purple-700 dark:text-purple-300 flex items-center justify-center h-6 w-6"></div>
+                                    {Array.from({ length: 16 }, (_, i) => (
+                                        <div key={`h-${i}`} className="bg-purple-100 dark:bg-purple-900/30 font-mono text-[10px] font-bold text-purple-700 dark:text-purple-300 flex items-center justify-center h-6 w-6">
+                                            {i.toString(16).toUpperCase()}
+                                        </div>
+                                    ))}
+
+                                    {/* Data rows */}
+                                    {customSBox.map((row, i) => (
+                                        <>
+                                            {/* Row header */}
+                                            <div key={`r-${i}`} className="bg-purple-100 dark:bg-purple-900/30 font-mono text-[10px] font-bold text-purple-700 dark:text-purple-300 flex items-center justify-center h-6 w-6">
+                                                {i.toString(16).toUpperCase()}
+                                            </div>
+
+                                            {/* Row values */}
+                                            {row.map((val, j) => (
+                                                <div
+                                                    key={`${i}-${j}`}
+                                                    className="bg-white dark:bg-slate-800 font-mono text-[10px] text-slate-800 dark:text-slate-200 flex items-center justify-center h-6 w-6 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                                    title={`[${i},${j}] = ${val} (0x${val.toString(16).toUpperCase().padStart(2, '0')})`}
+                                                >
+                                                    {val.toString(16).toUpperCase().padStart(2, '0')}
+                                                </div>
+                                            ))}
+                                        </>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ===== ENCRYPT SECTION ===== */}

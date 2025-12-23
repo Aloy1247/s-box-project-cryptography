@@ -48,6 +48,11 @@
     gap: 1px;
 }
 
+/* S-box grid with headers (17 columns) */
+.grid-cols-17 {
+    grid-template-columns: repeat(17, minmax(0, 1fr));
+}
+
 /* Spinner animation */
 @keyframes spin {
     to {

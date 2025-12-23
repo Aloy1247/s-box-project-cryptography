@@ -126,6 +126,102 @@ async def validate_custom_matrix(file: UploadFile = File(...)):
         )
 
 
+@router.post("/sbox/validate")
+async def validate_custom_sbox(file: UploadFile = File(...)):
+    """
+    Validate a custom S-box file (CSV,XLSX, or JSON with 16x16 S-box).
+    
+    Checks:
+    - File format
+    - Dimensions (16x16)
+    - Values (0-255, all unique - bijective)
+    """
+    filename = file.filename or ""
+    ext = filename.lower().split(".")[-1] if "." in filename else ""
+    
+    if ext not in ("csv", "xlsx", "xls", "json"):
+        return {
+            "valid": False,
+            "error": "Unsupported file format. Use CSV, XLSX, or JSON."
+        }
+    
+    # Read file content
+    content = await file.read()
+    
+    # Parse S-box
+    try:
+        if ext == "json":
+            import json
+            sbox = json.loads(content.decode('utf-8'))
+        else:
+            # Use existing matrix parser but expect 16x16
+            import pandas as pd
+            import io
+            
+            if ext == "csv":
+                df = pd.read_csv(io.BytesIO(content), header=None)
+            else:
+                df = pd.read_excel(io.BytesIO(content), header=None)
+            
+            sbox = df.values.tolist()
+    except Exception as e:
+        return {
+            "valid": False,
+            "error": f"Failed to parse file: {str(e)}"
+        }
+    
+    # Validate dimensions
+    if not isinstance(sbox, list) or len(sbox) != 16:
+        return {
+            "valid": False,
+            "error": f"S-box must be 16 rows, got {len(sbox) if isinstance(sbox, list) else 'invalid'}"
+        }
+    
+    for i, row in enumerate(sbox):
+        if not isinstance(row, list) or len(row) != 16:
+            return {
+                "valid": False,
+                "error": f"Row {i} must have 16 columns, got {len(row) if isinstance(row, list) else 'invalid'}"
+            }
+    
+    # Flatten and check values
+    flat = [val for row in sbox for val in row]
+    
+    # Validate all values are integers 0-255
+    try:
+        flat_int = [int(v) for v in flat]
+    except:
+        return {
+            "valid": False,
+            "error": "S-box must contain only integer values"
+        }
+    
+    for val in flat_int:
+        if not (0 <= val <= 255):
+            return {
+                "valid": False,
+                "error": f"S-box values must be 0-255, found {val}"
+            }
+    
+    # Check bijective (all values 0-255 appear exactly once)
+    if len(set(flat_int)) != 256:
+        return {
+            "valid": False,
+            "error": "S-box must be bijective (contain each value 0-255 exactly once)"
+        }
+    
+    if sorted(flat_int) != list(range(256)):
+        return {
+            "valid": False,
+            "error": "S-box must contain all values from 0 to 255"
+        }
+    
+    return {
+        "valid": True,
+        "sbox": sbox
+    }
+
+
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(request: AnalyzeRequest):
     """
