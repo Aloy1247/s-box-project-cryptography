@@ -5,6 +5,7 @@ FastAPI endpoints for S-box Forge.
 """
 
 import sys
+from typing import List, Optional
 from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -134,60 +135,91 @@ async def analyze(request: AnalyzeRequest):
     Returns the S-box, all 10 analysis metrics, and fixed points.
     """
     # Get matrix data
-    if request.matrixId:
-        matrix_data = matrix_service.get_by_id(request.matrixId)
-        
-        if matrix_data is None:
-            raise HTTPException(
-                status_code=404,
-                detail={"error": "Matrix not found", "matrixId": request.matrixId}
+    import traceback
+    try:
+        if request.matrixId:
+            matrix_data = matrix_service.get_by_id(request.matrixId)
+            
+            if matrix_data is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail={"error": "Matrix not found", "matrixId": request.matrixId}
+                )
+            
+            matrix = matrix_data.get("matrix")
+            if matrix is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": "Matrix data not available (placeholder)",
+                        "matrixId": request.matrixId
+                    }
+                )
+            
+            # Use matrix's constant if not specified
+            constant_hex = request.constant or matrix_data.get("constant", "63")
+            
+            # Parse constant
+            try:
+                 constant = int(constant_hex, 16)
+            except:
+                 constant = 0x63
+
+            # Construct and analyze
+            sbox, metrics, fixed_points, calc_time = sbox_service.construct_and_analyze(
+                matrix, constant
             )
-        
-        matrix = matrix_data.get("matrix")
-        if matrix is None:
+            
+        elif request.customMatrix:
+            matrix = request.customMatrix
+            constant_hex = request.constant
+            
+            # Validate custom matrix
+            valid, error, details = validate_matrix(matrix)
+            if not valid:
+                raise HTTPException(
+                    status_code=422,
+                    detail={"error": error, "details": details}
+                )
+                
+            # Parse constant
+            constant = int(constant_hex, 16)
+            
+            # Construct and analyze
+            sbox, metrics, fixed_points, calc_time = sbox_service.construct_and_analyze(
+                matrix, constant
+            )
+            
+        elif request.customSBox:
+            sbox_input = request.customSBox
+            matrix = [] # No matrix
+            
+            # Basic validation
+            if len(sbox_input) != 16 or any(len(row) != 16 for row in sbox_input):
+                 raise HTTPException(status_code=422, detail={"error": "S-box must be 16x16"})
+                 
+            # Analyze directly
+            sbox, metrics, fixed_points, calc_time = sbox_service.analyze_custom_sbox(sbox_input)
+            
+        else:
             raise HTTPException(
                 status_code=400,
-                detail={
-                    "error": "Matrix data not available (placeholder)",
-                    "matrixId": request.matrixId
-                }
+                detail={"error": "Either matrixId, customMatrix, or customSBox must be provided"}
             )
         
-        # Use matrix's constant if not specified
-        constant_hex = request.constant or matrix_data.get("constant", "63")
-        
-    elif request.customMatrix:
-        matrix = request.customMatrix
-        constant_hex = request.constant
-        
-        # Validate custom matrix
-        valid, error, details = validate_matrix(matrix)
-        if not valid:
-            raise HTTPException(
-                status_code=422,
-                detail={"error": error, "details": details}
-            )
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail={"error": "Either matrixId or customMatrix must be provided"}
+        return AnalyzeResponse(
+            matrix=matrix,
+            sbox=sbox,
+            analysis=AnalysisMetrics(**metrics),
+            fixedPoints=fixed_points,
+            calculationTimeMs=calc_time
         )
-    
-    # Parse constant
-    constant = int(constant_hex, 16)
-    
-    # Construct and analyze
-    sbox, metrics, fixed_points, calc_time = sbox_service.construct_and_analyze(
-        matrix, constant
-    )
-    
-    return AnalyzeResponse(
-        matrix=matrix,
-        sbox=sbox,
-        analysis=AnalysisMetrics(**metrics),
-        fixedPoints=fixed_points,
-        calculationTimeMs=calc_time
-    )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Error in analyze endpoint:")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
 @router.post("/export")
@@ -276,16 +308,23 @@ async def export_report(request: ExportRequest):
 from pydantic import BaseModel
 
 
+
 class AESEncryptRequest(BaseModel):
     plaintext: str
     key: str
-    sboxId: str
+    sboxId: Optional[str] = None
+    customSBox: Optional[List[List[int]]] = None
+    customMatrix: Optional[List[List[int]]] = None
+    constant: Optional[str] = "63"
 
 
 class AESDecryptRequest(BaseModel):
     ciphertext: str
     key: str
-    sboxId: str
+    sboxId: Optional[str] = None
+    customSBox: Optional[List[List[int]]] = None
+    customMatrix: Optional[List[List[int]]] = None
+    constant: Optional[str] = "63"
 
 
 class AESEncryptResponse(BaseModel):
@@ -309,14 +348,25 @@ async def aes_encrypt(request: AESEncryptRequest):
     from services.aes_service import aes_service
     
     try:
+        # Determine constant
+        c_val = 0x63
+        if request.constant:
+             try:
+                 c_val = int(request.constant, 16)
+             except:
+                 pass
+                 
         ciphertext = aes_service.encrypt(
             plaintext=request.plaintext,
             key=request.key,
-            sbox_id=request.sboxId
+            sbox_id=request.sboxId,
+            custom_sbox=request.customSBox,
+            custom_matrix=request.customMatrix,
+            constant=c_val
         )
         return AESEncryptResponse(
             ciphertext=ciphertext,
-            sboxUsed=request.sboxId
+            sboxUsed=request.sboxId or "Custom"
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -335,14 +385,25 @@ async def aes_decrypt(request: AESDecryptRequest):
     from services.aes_service import aes_service
     
     try:
+        # Determine constant
+        c_val = 0x63
+        if request.constant:
+             try:
+                 c_val = int(request.constant, 16)
+             except:
+                 pass
+
         plaintext = aes_service.decrypt(
             ciphertext_hex=request.ciphertext,
             key=request.key,
-            sbox_id=request.sboxId
+            sbox_id=request.sboxId,
+            custom_sbox=request.customSBox,
+            custom_matrix=request.customMatrix,
+            constant=c_val
         )
         return AESDecryptResponse(
             plaintext=plaintext,
-            sboxUsed=request.sboxId
+            sboxUsed=request.sboxId or "Custom"
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -361,7 +422,10 @@ from fastapi import Form
 async def encrypt_image(
     image: UploadFile = File(...),
     key: str = Form(...),
-    sboxId: str = Form(default="KAES")
+    sboxId: Optional[str] = Form(None),
+    customSBox: Optional[str] = Form(None),
+    customMatrix: Optional[str] = Form(None),
+    constant: Optional[str] = Form("63")
 ):
     """
     Encrypt an image using AES with custom S-box.
@@ -369,16 +433,25 @@ async def encrypt_image(
     Returns the encrypted image as PNG.
     """
     from services.image_encryption_service import image_encryption_service
+    import json
     
     try:
         # Read image data
         image_data = await image.read()
         
+        # Parse custom inputs
+        c_sbox = json.loads(customSBox) if customSBox else None
+        c_matrix = json.loads(customMatrix) if customMatrix else None
+        c_const = int(constant, 16) if constant else 0x63
+        
         # Encrypt
         encrypted_data = image_encryption_service.encrypt_image(
             image_data=image_data,
             key=key,
-            sbox_id=sboxId
+            sbox_id=sboxId,
+            custom_sbox=c_sbox,
+            custom_matrix=c_matrix,
+            constant=c_const
         )
         
         # Return as streaming response
@@ -397,7 +470,10 @@ async def encrypt_image(
 async def decrypt_image(
     image: UploadFile = File(...),
     key: str = Form(...),
-    sboxId: str = Form(default="KAES")
+    sboxId: Optional[str] = Form(None),
+    customSBox: Optional[str] = Form(None),
+    customMatrix: Optional[str] = Form(None),
+    constant: Optional[str] = Form("63")
 ):
     """
     Decrypt an image using AES with custom S-box.
@@ -405,16 +481,25 @@ async def decrypt_image(
     Returns the decrypted image as PNG.
     """
     from services.image_encryption_service import image_encryption_service
+    import json
     
     try:
         # Read image data
         image_data = await image.read()
         
+        # Parse custom inputs
+        c_sbox = json.loads(customSBox) if customSBox else None
+        c_matrix = json.loads(customMatrix) if customMatrix else None
+        c_const = int(constant, 16) if constant else 0x63
+        
         # Decrypt
         decrypted_data = image_encryption_service.decrypt_image(
             image_data=image_data,
             key=key,
-            sbox_id=sboxId
+            sbox_id=sboxId,
+            custom_sbox=c_sbox,
+            custom_matrix=c_matrix,
+            constant=c_const
         )
         
         # Return as streaming response

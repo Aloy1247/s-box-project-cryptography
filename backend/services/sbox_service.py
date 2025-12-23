@@ -49,6 +49,33 @@ class SboxService:
         
         return sbox, metrics, fixed_points, elapsed_ms
 
+    def analyze_custom_sbox(
+        self,
+        sbox: List[List[int]]
+    ) -> Tuple[List[List[int]], Dict, List[int], int]:
+        """
+        Analyze a custom provided S-box.
+        
+        Args:
+            sbox: 16x16 table of integers (0-255)
+        
+        Returns:
+            (sbox, analysis_metrics, fixed_points, calculation_time_ms)
+        """
+        start_time = time.perf_counter()
+        
+        # Run analysis directly
+        metrics = analyze_sbox(sbox)
+        
+        # Find fixed points
+        flat_sbox = [val for row in sbox for val in row]
+        fixed_points = find_fixed_points(flat_sbox)
+        
+        # Calculate time
+        elapsed_ms = int((time.perf_counter() - start_time) * 1000)
+        
+        return sbox, metrics, fixed_points, elapsed_ms
+
 
 # Singleton instance
 sbox_service = SboxService()

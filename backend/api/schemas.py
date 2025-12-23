@@ -51,6 +51,7 @@ class AnalyzeRequest(BaseModel):
     """Request for POST /api/analyze."""
     matrixId: Optional[str] = None
     customMatrix: Optional[Matrix8x8] = None
+    customSBox: Optional[SBox16x16] = None
     constant: str = "63"
     
     @field_validator('constant')

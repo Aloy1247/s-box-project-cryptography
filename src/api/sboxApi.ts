@@ -27,6 +27,18 @@ export async function fetchMatrices(): Promise<AffineMatrixDef[]> {
     }
 }
 
+// Fetch single matrix details
+export async function fetchMatrix(id: string): Promise<AffineMatrixDef | null> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/matrices/${id}`);
+        if (!response.ok) return null;
+        return response.json();
+    } catch (error) {
+        console.error('Failed to fetch matrix:', error);
+        return null;
+    }
+}
+
 // Send matrix for analysis and S-box generation
 export async function analyzeMatrix(request: AnalyzeRequest): Promise<AnalyzeResponse> {
     const response = await fetch(`${API_BASE_URL}/api/analyze`, {
@@ -39,7 +51,14 @@ export async function analyzeMatrix(request: AnalyzeRequest): Promise<AnalyzeRes
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail?.error || error.detail || 'Analysis failed');
+        let errMsg = error.detail?.error || error.detail || 'Analysis failed';
+        if (typeof errMsg === 'object') {
+            // Handle Pydantic validation errors (array of objects)
+            errMsg = Array.isArray(errMsg)
+                ? errMsg.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+                : JSON.stringify(errMsg);
+        }
+        throw new Error(errMsg);
     }
 
     return response.json();

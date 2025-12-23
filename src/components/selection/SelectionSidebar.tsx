@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchMatrices } from '../../api/sboxApi';
-import { parseMatrixFile } from '../../utils/fileParser';
+import { parseMatrixFile, parseSBoxFile } from '../../utils/fileParser';
 import type { AffineMatrixDef } from '../../types';
 
 export function SelectionSidebar() {
@@ -13,6 +13,9 @@ export function SelectionSidebar() {
         customFileName,
         setCustomMatrix,
         clearCustomMatrix,
+        customSBoxFileName,
+        setCustomSBox,
+        clearCustomSBox,
         searchQuery,
         setSearchQuery,
     } = useAppStore();
@@ -20,6 +23,7 @@ export function SelectionSidebar() {
     const [matrices, setMatrices] = useState<AffineMatrixDef[]>([]);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [uploadType, setUploadType] = useState<'matrix' | 'sbox'>('matrix');
 
     useEffect(() => {
         fetchMatrices().then(setMatrices);
@@ -32,14 +36,23 @@ export function SelectionSidebar() {
 
     const handleFileUpload = useCallback(async (file: File) => {
         setUploadError(null);
-        const result = await parseMatrixFile(file);
 
-        if (result.success && result.matrix) {
-            setCustomMatrix(result.matrix, file.name);
+        if (uploadType === 'matrix') {
+            const result = await parseMatrixFile(file);
+            if (result.success && result.matrix) {
+                setCustomMatrix(result.matrix, file.name);
+            } else {
+                setUploadError(result.error || 'Failed to parse matrix file');
+            }
         } else {
-            setUploadError(result.error || 'Failed to parse file');
+            const result = await parseSBoxFile(file);
+            if (result.success && result.matrix) {
+                setCustomSBox(result.matrix, file.name);
+            } else {
+                setUploadError(result.error || 'Failed to parse S-box file');
+            }
         }
-    }, [setCustomMatrix]);
+    }, [setCustomMatrix, setCustomSBox, uploadType]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -59,6 +72,8 @@ export function SelectionSidebar() {
     const handleDragLeave = useCallback(() => {
         setIsDragging(false);
     }, []);
+
+    const hasUpload = uploadType === 'matrix' ? !!customFileName : !!customSBoxFileName;
 
     return (
         <>
@@ -84,6 +99,31 @@ export function SelectionSidebar() {
                         Custom
                     </button>
                 </div>
+
+                {mode === 'custom' && (
+                    <div className="mt-3 flex items-center justify-center gap-4 text-xs">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="radio"
+                                name="uploadType"
+                                checked={uploadType === 'matrix'}
+                                onChange={() => setUploadType('matrix')}
+                                className="text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-slate-600 dark:text-slate-300">Affine Matrix (8×8)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="radio"
+                                name="uploadType"
+                                checked={uploadType === 'sbox'}
+                                onChange={() => setUploadType('sbox')}
+                                className="text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-slate-600 dark:text-slate-300">S-Box (16×16)</span>
+                        </label>
+                    </div>
+                )}
             </div>
 
             {/* Search */}
@@ -146,7 +186,7 @@ export function SelectionSidebar() {
             {/* Custom Upload Zone */}
             <div className={`p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 relative z-30 ${mode === 'custom' ? 'ring-2 ring-blue-500 ring-inset' : ''
                 }`}>
-                {customFileName ? (
+                {hasUpload ? (
                     <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-green-200 dark:border-green-800">
                         <div className="flex items-center gap-3">
                             <div className="size-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -155,11 +195,15 @@ export function SelectionSidebar() {
                                 </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{customFileName}</p>
-                                <p className="text-xs text-green-600">Valid 8×8 matrix</p>
+                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                    {uploadType === 'matrix' ? customFileName : customSBoxFileName}
+                                </p>
+                                <p className="text-xs text-green-600">
+                                    Valid {uploadType === 'matrix' ? '8×8 matrix' : '16×16 S-box'}
+                                </p>
                             </div>
                             <button
-                                onClick={clearCustomMatrix}
+                                onClick={uploadType === 'matrix' ? clearCustomMatrix : clearCustomSBox}
                                 className="text-slate-400 hover:text-red-500 transition-colors"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -191,9 +235,11 @@ export function SelectionSidebar() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                         <span className="text-xs font-medium text-slate-500">
-                            {isDragging ? 'Drop file here' : 'Upload Custom Matrix'}
+                            {isDragging ? 'Drop file here' : `Upload Custom ${uploadType === 'matrix' ? 'Matrix' : 'S-Box'}`}
                         </span>
-                        <p className="text-[10px] text-slate-400 mt-1">CSV or XLSX, 8×8 binary</p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            CSV or XLSX, {uploadType === 'matrix' ? '8×8 binary' : '16×16 values (0-255)'}
+                        </p>
                     </label>
                 )}
 

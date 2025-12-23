@@ -1,44 +1,127 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchMatrices } from '../../api/sboxApi';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const initialMetrics = {
     entropy: null, npcr: null, uaci: null,
     correlationH: null, correlationV: null, correlationD: null,
+    histogramOriginal: undefined, histogramEncrypted: undefined
+};
+
+const HistogramChart = ({ title, data }: { title: string, data: { r: number[], g: number[], b: number[] } }) => {
+    const chartData = data.r.map((_, i) => ({
+        bin: i,
+        r: data.r[i],
+        g: data.g[i],
+        b: data.b[i]
+    }));
+
+    return (
+        <div className="flex flex-col h-[250px] bg-slate-50 dark:bg-slate-900/40 rounded-xl p-4 border border-slate-200 dark:border-slate-700/50">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4 text-center uppercase tracking-wider">{title}</h4>
+            <div className="flex-1 w-full min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                        <XAxis dataKey="bin" hide />
+                        <YAxis hide />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '12px', borderRadius: '8px' }}
+                            itemStyle={{ padding: 0 }}
+                            labelStyle={{ display: 'none' }}
+                            formatter={(value: number | undefined) => [value, 'Count']}
+                        />
+                        <Line type="monotone" dataKey="r" stroke="#ef4444" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="g" stroke="#22c55e" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="b" stroke="#3b82f6" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
 };
 
 export function ImageEncryptionPage() {
     const encryptRef = useRef<HTMLInputElement>(null);
     const decryptRef = useRef<HTMLInputElement>(null);
 
-    // Dynamic matrix list from API
-    const [sboxOptions, setSboxOptions] = useState<{ value: string; label: string }[]>([
-        { value: 'KAES', label: 'AES Standard' },
-        { value: 'K44', label: 'K44 (Best)' },
-    ]);
-
-    useEffect(() => {
-        fetchMatrices().then(matrices => {
-            const options = matrices.map(m => ({
-                value: m.id,
-                label: m.name,
-            }));
-            if (options.length > 0) {
-                setSboxOptions(options);
-            }
-        }).catch(console.error);
-    }, []);
-
     // Global Store
-    const { imageEncryption, setImageEncryptionState } = useAppStore();
+    const {
+        imageEncryption, setImageEncryptionState,
+        customSBox, customSBoxFileName,
+        customMatrix, customFileName,
+        constant
+    } = useAppStore();
+
     const {
         sbox, key,
         encryptInput, encryptPreview, encryptResult, encryptStatus, encryptError,
         decryptInput, decryptPreview, decryptResult, decryptStatus, decryptError,
         metrics
     } = imageEncryption;
+
+    // Dynamic matrix list from API + Custom
+    const [sboxOptions, setSboxOptions] = useState<{ value: string; label: string }[]>([
+        { value: 'KAES', label: 'AES Standard' },
+        { value: 'K44', label: 'K44 (Best)' },
+    ]);
+
+    // Update options when matrices fetch or custom data changes
+    useEffect(() => {
+        fetchMatrices().then(matrices => {
+            const options = matrices.map(m => ({
+                value: m.id,
+                label: m.name,
+            }));
+
+            // Add Custom option if available
+            if (customSBox || customMatrix) {
+                const label = customSBox
+                    ? `Pixel S-Box (${customSBoxFileName || 'Uploaded'})`
+                    : `Custom Matrix (${customFileName || 'Uploaded'})`;
+                options.unshift({ value: 'custom', label: `⭐ ${label}` });
+
+                // Auto-select custom if not already selected
+                // (Optional: this might be annoying if user switches back and forth, 
+                // but usually after upload they want to use it)
+                if (sbox !== 'custom') {
+                    setImageEncryptionState({ sbox: 'custom' });
+                }
+            } else {
+                // If custom was selected but now removed, reset to KAES
+                if (sbox === 'custom') {
+                    setImageEncryptionState({ sbox: 'KAES' });
+                }
+            }
+
+            if (options.length > 0) {
+                setSboxOptions(_prev => {
+                    // Merge basic options (KAES, K44) with API options
+                    // Ensure KAES and K44 are always there
+                    const basics = [{ value: 'KAES', label: 'AES Standard' }, { value: 'K44', label: 'K44 (Best)' }];
+
+                    // Filter out duplicates
+                    const uniqueOptions = [...basics, ...options].reduce((acc, current) => {
+                        const x = acc.find(item => item.value === current.value);
+                        if (!x) {
+                            return acc.concat([current]);
+                        } else {
+                            return acc;
+                        }
+                    }, [] as { value: string; label: string }[]);
+
+                    // Put 'custom' at the top if exists
+                    const customOpt = uniqueOptions.find(o => o.value === 'custom');
+                    const others = uniqueOptions.filter(o => o.value !== 'custom');
+
+                    return customOpt ? [customOpt, ...others] : others;
+                });
+            }
+        }).catch(console.error);
+    }, [customSBox, customMatrix, customSBoxFileName, customFileName, sbox, setImageEncryptionState]);
+
 
     // Helper Setters (optional, can call setImageEncryptionState directly)
     const setSbox = (val: string) => setImageEncryptionState({ sbox: val });
@@ -60,7 +143,19 @@ export function ImageEncryptionPage() {
             const formData = new FormData();
             formData.append('image', encryptInput);
             formData.append('key', key);
-            formData.append('sboxId', sbox);
+
+            if (sbox === 'custom') {
+                if (customSBox) {
+                    formData.append('customSBox', JSON.stringify(customSBox));
+                } else if (customMatrix) {
+                    formData.append('customMatrix', JSON.stringify(customMatrix));
+                    formData.append('constant', constant);
+                } else {
+                    throw new Error("Custom S-box selected but no data found.");
+                }
+            } else {
+                formData.append('sboxId', sbox);
+            }
 
             const res = await fetch(`${API_BASE_URL}/api/image/encrypt`, { method: 'POST', body: formData });
             if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
@@ -102,16 +197,42 @@ export function ImageEncryptionPage() {
             const formData = new FormData();
             formData.append('image', decryptInput);
             formData.append('key', key);
-            formData.append('sboxId', sbox);
+
+            if (sbox === 'custom') {
+                if (customSBox) {
+                    formData.append('customSBox', JSON.stringify(customSBox));
+                } else if (customMatrix) {
+                    formData.append('customMatrix', JSON.stringify(customMatrix));
+                    formData.append('constant', constant);
+                } else {
+                    throw new Error("Custom S-box selected but no data found.");
+                }
+            } else {
+                formData.append('sboxId', sbox);
+            }
 
             const res = await fetch(`${API_BASE_URL}/api/image/decrypt`, { method: 'POST', body: formData });
             if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
 
-            const resultUrl = URL.createObjectURL(await res.blob());
+            const blob = await res.blob();
+            const resultUrl = URL.createObjectURL(blob);
+
             setImageEncryptionState({
                 decryptResult: resultUrl,
                 decryptStatus: 'done'
             });
+
+            // Run Analysis (Decrypted = Original, Input = Encrypted)
+            const af = new FormData();
+            af.append('originalImage', blob, 'decrypted.png');
+            af.append('encryptedImage', decryptInput);
+
+            const ar = await fetch(`${API_BASE_URL}/api/image/analyze`, { method: 'POST', body: af });
+            if (ar.ok) {
+                const newMetrics = await ar.json();
+                setImageEncryptionState({ metrics: newMetrics });
+            }
+
         } catch (e) {
             setDecryptError(e instanceof Error ? e.message : 'Failed');
             setDecryptStatus('error');
@@ -390,6 +511,19 @@ export function ImageEncryptionPage() {
                         ))}
                     </div>
                 </section>
+
+                {/* ===== HISTOGRAMS ===== */}
+                {metrics.histogramOriginal && metrics.histogramEncrypted && (
+                    <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+                        <h3 className="text-slate-900 dark:text-white text-lg font-bold mb-6 flex items-center gap-2">
+                            <span className="text-xl">📈</span> Histogram Analysis
+                        </h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <HistogramChart title="Original Histogram" data={metrics.histogramOriginal} />
+                            <HistogramChart title="Encrypted Histogram" data={metrics.histogramEncrypted} />
+                        </div>
+                    </section>
+                )}
             </div>
         </main>
     );

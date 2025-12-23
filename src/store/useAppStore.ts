@@ -15,6 +15,8 @@ interface AppActions {
     selectMatrix: (matrixId: string) => void;
     setCustomMatrix: (matrix: Matrix8x8, fileName: string) => void;
     clearCustomMatrix: () => void;
+    setCustomSBox: (sbox: SBox16x16, fileName: string) => void;
+    clearCustomSBox: () => void;
     setConstant: (constant: string) => void;
     setSearchQuery: (query: string) => void;
     setViewMode: (mode: 'engineering' | 'paper') => void;
@@ -44,6 +46,8 @@ const initialState: AppState = {
     selectedMatrixId: null,
     customMatrix: null,
     customFileName: null,
+    customSBox: null,
+    customSBoxFileName: null,
     constant: '63',
 
     displayMatrix: null,
@@ -98,12 +102,16 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
         selectedMatrixId: mode === 'predefined' ? null : null,
         customMatrix: mode === 'custom' ? null : null,
         customFileName: mode === 'custom' ? null : null,
+        customSBox: null,
+        customSBoxFileName: null,
     }),
 
     selectMatrix: (matrixId) => set({
         selectedMatrixId: matrixId,
         customMatrix: null,
         customFileName: null,
+        customSBox: null,
+        customSBoxFileName: null,
         status: 'ready',
         error: null,
     }),
@@ -112,6 +120,8 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
         customMatrix: matrix,
         customFileName: fileName,
         selectedMatrixId: null,
+        customSBox: null,
+        customSBoxFileName: null,
         status: 'ready',
         error: null,
     }),
@@ -119,6 +129,28 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
     clearCustomMatrix: () => set({
         customMatrix: null,
         customFileName: null,
+        status: 'idle',
+    }),
+
+    setCustomSBox: (sbox, fileName) => set({
+        customSBox: sbox,
+        customSBoxFileName: fileName,
+        customMatrix: null,
+        customFileName: null,
+        selectedMatrixId: null,
+        status: 'ready',
+        error: null,
+        // When setting a custom S-box, we can immediately display it!
+        sbox: sbox,
+        displayMatrix: null, // Clear matrix view
+        analysis: null,
+        fixedPoints: [],
+    }),
+
+    clearCustomSBox: () => set({
+        customSBox: null,
+        customSBoxFileName: null,
+        sbox: null,
         status: 'idle',
     }),
 

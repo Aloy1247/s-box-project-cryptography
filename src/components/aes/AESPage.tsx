@@ -10,20 +10,13 @@ export function AESPage() {
         { value: 'KAES', label: 'AES Standard (KAES)' },
     ]);
 
-    useEffect(() => {
-        fetchMatrices().then(matrices => {
-            const options = matrices.map(m => ({
-                value: m.id,
-                label: m.name,
-            }));
-            if (options.length > 0) {
-                setSboxOptions(options);
-            }
-        }).catch(console.error);
-    }, []);
-
     // Use global store for persistence
-    const { aes, setAESState } = useAppStore();
+    const {
+        aes, setAESState,
+        customSBox, customSBoxFileName,
+        customMatrix, customFileName,
+        constant
+    } = useAppStore();
     const { inputData, key, sbox, output, status, errorMsg } = aes;
 
     // Helper setters
@@ -33,6 +26,49 @@ export function AESPage() {
     const setOutput = (val: string) => setAESState({ output: val });
     const setStatus = (val: 'ready' | 'processing' | 'done' | 'error') => setAESState({ status: val });
     const setErrorMsg = (val: string) => setAESState({ errorMsg: val });
+
+    // Dynamic matrix list from API + Custom
+    // Update options when matrices fetch or custom data changes
+    useEffect(() => {
+        fetchMatrices().then(matrices => {
+            const options = matrices.map(m => ({
+                value: m.id,
+                label: m.name,
+            }));
+
+            // Add Custom option if available
+            if (customSBox || customMatrix) {
+                const label = customSBox
+                    ? `Pixel S-Box (${customSBoxFileName || 'Uploaded'})`
+                    : `Custom Matrix (${customFileName || 'Uploaded'})`;
+                options.unshift({ value: 'custom', label: `⭐ ${label}` });
+
+                // Auto-select custom if not already selected
+                if (sbox !== 'custom') {
+                    setAESState({ sbox: 'custom' });
+                }
+            } else {
+                // If custom was selected but now removed, reset to KAES
+                if (sbox === 'custom') {
+                    setAESState({ sbox: 'KAES' });
+                }
+            }
+
+            if (options.length > 0) {
+                setSboxOptions(_prev => {
+                    const basics = [{ value: 'KAES', label: 'AES Standard (KAES)' }];
+                    const uniqueOptions = [...basics, ...options].reduce((acc, current) => {
+                        const x = acc.find(item => item.value === current.value);
+                        return !x ? acc.concat([current]) : acc;
+                    }, [] as { value: string; label: string }[]);
+
+                    const customOpt = uniqueOptions.find(o => o.value === 'custom');
+                    const others = uniqueOptions.filter(o => o.value !== 'custom');
+                    return customOpt ? [customOpt, ...others] : others;
+                });
+            }
+        }).catch(console.error);
+    }, [customSBox, customMatrix, customSBoxFileName, customFileName, sbox, setAESState]);
 
     const handleEncrypt = async () => {
         if (!inputData.trim()) {
@@ -50,14 +86,27 @@ export function AESPage() {
         setErrorMsg('');
 
         try {
+            const payload: any = {
+                plaintext: inputData,
+                key: key,
+                sboxId: sbox === 'custom' ? null : sbox,
+            };
+
+            if (sbox === 'custom') {
+                if (customSBox) {
+                    payload.customSBox = customSBox;
+                } else if (customMatrix) {
+                    payload.customMatrix = customMatrix;
+                    payload.constant = constant;
+                } else {
+                    throw new Error("Custom S-box selected but no data found.");
+                }
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/aes/encrypt`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plaintext: inputData,
-                    key: key,
-                    sboxId: sbox,
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -90,14 +139,27 @@ export function AESPage() {
         setErrorMsg('');
 
         try {
+            const payload: any = {
+                ciphertext: inputData,
+                key: key,
+                sboxId: sbox === 'custom' ? null : sbox,
+            };
+
+            if (sbox === 'custom') {
+                if (customSBox) {
+                    payload.customSBox = customSBox;
+                } else if (customMatrix) {
+                    payload.customMatrix = customMatrix;
+                    payload.constant = constant;
+                } else {
+                    throw new Error("Custom S-box selected but no data found.");
+                }
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/aes/decrypt`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ciphertext: inputData,
-                    key: key,
-                    sboxId: sbox,
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {

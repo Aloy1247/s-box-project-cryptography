@@ -45,39 +45,28 @@ function validateMatrix(data: unknown[][]): ParseResult {
     return { success: true, matrix };
 }
 
-// Parse CSV file
-export function parseCSV(file: File): Promise<ParseResult> {
-    return new Promise((resolve) => {
+// Parse raw data from CSV
+function parseRawCSV(file: File): Promise<unknown[][]> {
+    return new Promise((resolve, reject) => {
         Papa.parse(file, {
             complete: (results) => {
                 if (results.errors.length > 0) {
-                    resolve({
-                        success: false,
-                        error: `CSV parse error: ${results.errors[0].message}`,
-                    });
+                    reject(new Error(`CSV parse error: ${results.errors[0].message}`));
                     return;
                 }
-
                 const data = results.data as unknown[][];
-                // Filter out empty rows
                 const filtered = data.filter(row => row.some(cell => cell !== '' && cell !== null));
-                resolve(validateMatrix(filtered));
+                resolve(filtered);
             },
-            error: (error) => {
-                resolve({
-                    success: false,
-                    error: `Failed to read CSV: ${error.message}`,
-                });
-            },
+            error: (error) => reject(new Error(`Failed to read CSV: ${error.message}`)),
         });
     });
 }
 
-// Parse XLSX file
-export function parseXLSX(file: File): Promise<ParseResult> {
-    return new Promise((resolve) => {
+// Parse raw data from XLSX
+function parseRawXLSX(file: File): Promise<unknown[][]> {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
-
         reader.onload = (e) => {
             try {
                 const data = e.target?.result;
@@ -85,41 +74,71 @@ export function parseXLSX(file: File): Promise<ParseResult> {
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
-
-                // Filter out empty rows
                 const filtered = jsonData.filter(row => row.some(cell => cell !== '' && cell !== null && cell !== undefined));
-                resolve(validateMatrix(filtered));
+                resolve(filtered);
             } catch (error) {
-                resolve({
-                    success: false,
-                    error: `Failed to read XLSX: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                });
+                reject(new Error(`Failed to read XLSX: ${error instanceof Error ? error.message : 'Unknown error'}`));
             }
         };
-
-        reader.onerror = () => {
-            resolve({
-                success: false,
-                error: 'Failed to read file',
-            });
-        };
-
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsBinaryString(file);
     });
 }
 
-// Parse file based on extension
+// Validate that S-box is 16x16 and values 0-255
+function validateSBox(data: unknown[][]): ParseResult {
+    if (data.length !== 16) {
+        return { success: false, error: `S-box must be 16×16. Found ${data.length} rows.` };
+    }
+    const sbox: number[][] = [];
+    for (let i = 0; i < 16; i++) {
+        const row = data[i];
+        if (!row || row.length !== 16) {
+            return { success: false, error: `Row ${i + 1} must have 16 columns.` };
+        }
+        const numRow: number[] = [];
+        for (let j = 0; j < 16; j++) {
+            const val = Number(row[j]);
+            if (isNaN(val) || val < 0 || val > 255) {
+                return { success: false, error: `Invalid value at [${i + 1},${j + 1}]: ${row[j]}` };
+            }
+            numRow.push(val);
+        }
+        sbox.push(numRow);
+    }
+    return { success: true, matrix: sbox };
+}
+
+// Parse file based on extension (Matrix 8x8)
 export async function parseMatrixFile(file: File): Promise<ParseResult> {
     const ext = file.name.split('.').pop()?.toLowerCase();
+    try {
+        let data: unknown[][] = [];
+        if (ext === 'csv') data = await parseRawCSV(file);
+        else if (ext === 'xlsx' || ext === 'xls') data = await parseRawXLSX(file);
+        else return { success: false, error: 'Unsupported file format.' };
 
-    if (ext === 'csv') {
-        return parseCSV(file);
-    } else if (ext === 'xlsx' || ext === 'xls') {
-        return parseXLSX(file);
-    } else {
-        return {
-            success: false,
-            error: `Unsupported file format. Use CSV or XLSX.`,
-        };
+        return validateMatrix(data);
+    } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : 'Parse error' };
     }
 }
+
+// Parse file based on extension (S-Box 16x16)
+export async function parseSBoxFile(file: File): Promise<ParseResult> {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    try {
+        let data: unknown[][] = [];
+        if (ext === 'csv') data = await parseRawCSV(file);
+        else if (ext === 'xlsx' || ext === 'xls') data = await parseRawXLSX(file);
+        else return { success: false, error: 'Unsupported file format.' };
+
+        return validateSBox(data);
+    } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : 'Parse error' };
+    }
+}
+
+// Keep old exports just in case (optional, but refactoring replaced them)
+export const parseCSV = async (file: File) => parseMatrixFile(file);
+export const parseXLSX = async (file: File) => parseMatrixFile(file);
