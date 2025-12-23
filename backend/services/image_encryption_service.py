@@ -217,7 +217,7 @@ class ImageEncryptionService:
             # The original code assumed constant=0x63 for KAES and 0x00 for others.
             if sbox_id not in self._sbox_cache:
                 try:
-                    from services.matrix_service import matrix_service
+                    from backend.services.matrix_service import matrix_service
                 except ImportError:
                     from .matrix_service import matrix_service
 
