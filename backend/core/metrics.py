@@ -52,6 +52,7 @@ def walsh_hadamard_transform(func: List[int]) -> List[int]:
         Walsh spectrum (256 values)
     """
     n = len(func)
+<<<<<<< HEAD
     # Convert 0/1 to 1/-1 and work with float for accuracy
     wht = np.array([1 - 2 * f for f in func], dtype=np.float64)
     
@@ -67,6 +68,23 @@ def walsh_hadamard_transform(func: List[int]) -> List[int]:
         h *= 2
     
     return [int(w) for w in wht]
+=======
+    wht = np.array(func, dtype=int)
+    wht = 1 - 2 * wht  # Convert 0/1 to 1/-1
+    
+    h = 1
+    while h < n:
+        # Vectorized WHT step
+        wht = wht.reshape((n // (2 * h), 2, h))
+        x = wht[:, 0, :]
+        y = wht[:, 1, :]
+        wht[:, 0, :] = x + y
+        wht[:, 1, :] = x - y
+        wht = wht.reshape(n)
+        h *= 2
+    
+    return wht.tolist()
+>>>>>>> c1b06dd38373a30c655cdefd5d6198632386ed73
 
 
 def compute_nonlinearity(sbox: List[int]) -> int:
