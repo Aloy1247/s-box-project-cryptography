@@ -52,21 +52,21 @@ def walsh_hadamard_transform(func: List[int]) -> List[int]:
         Walsh spectrum (256 values)
     """
     n = len(func)
-    wht = np.array(func, dtype=int)
-    wht = 1 - 2 * wht  # Convert 0/1 to 1/-1
+    # Convert 0/1 to 1/-1 and work with float for accuracy
+    wht = np.array([1 - 2 * f for f in func], dtype=np.float64)
     
+    # Standard iterative butterfly algorithm for WHT
     h = 1
     while h < n:
-        # Vectorized WHT step
-        wht = wht.reshape((n // (2 * h), 2, h))
-        x = wht[:, 0, :]
-        y = wht[:, 1, :]
-        wht[:, 0, :] = x + y
-        wht[:, 1, :] = x - y
-        wht = wht.reshape(n)
+        for i in range(0, n, h * 2):
+            for j in range(i, i + h):
+                x = wht[j]
+                y = wht[j + h]
+                wht[j] = x + y
+                wht[j + h] = x - y
         h *= 2
     
-    return wht.tolist()
+    return [int(w) for w in wht]
 
 
 def compute_nonlinearity(sbox: List[int]) -> int:
@@ -102,9 +102,7 @@ def compute_nonlinearity(sbox: List[int]) -> int:
         func = parity_lut[inner]
         
         # Compute Walsh transform
-        # We can implement a fast WHT or use the existing one
-        # Let's use our vectorized WHT
-        wht = walsh_hadamard_transform(func)
+        wht = walsh_hadamard_transform(func.tolist())
         
         # NL = (2^n - max|W|) / 2
         max_abs = np.max(np.abs(wht))
@@ -177,7 +175,7 @@ def compute_bic_nl(sbox: List[int]) -> int:
             func = bit_i ^ bit_j
             
             # Compute Walsh transform
-            wht = walsh_hadamard_transform(func)
+            wht = walsh_hadamard_transform(func.tolist())
             max_abs = np.max(np.abs(wht))
             nl = (256 - max_abs) // 2
             min_nl = min(min_nl, nl)
