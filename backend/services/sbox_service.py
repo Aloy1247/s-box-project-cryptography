@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import time
 from typing import List, Dict, Tuple, Optional
 
-from core import construct_sbox, find_fixed_points, analyze_sbox
+from backend.core import construct_sbox, find_fixed_points, analyze_sbox
 
 
 class SboxService:

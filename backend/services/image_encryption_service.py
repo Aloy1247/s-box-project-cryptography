@@ -19,9 +19,9 @@ _backend_dir = _services_dir.parent
 if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 
-from core.aes import key_expansion, generate_inverse_sbox
+from backend.core.aes import key_expansion, generate_inverse_sbox
 # matrix_service imported locally
-from core.affine import construct_sbox
+from backend.core.affine import construct_sbox
 
 # --- Vectorized AES Implementation ---
 
