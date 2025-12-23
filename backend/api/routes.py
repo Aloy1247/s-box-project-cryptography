@@ -26,9 +26,9 @@ from .schemas import (
     ExportRequest,
     ErrorResponse,
 )
-from services import matrix_service, sbox_service
-from core import validate_matrix
-from utils.file_parser import parse_matrix_file
+from backend.services import matrix_service, sbox_service
+from backend.core import validate_matrix
+from backend.utils.file_parser import parse_matrix_file
 
 
 router = APIRouter(prefix="/api", tags=["S-box API"])
@@ -345,7 +345,7 @@ async def aes_encrypt(request: AESEncryptRequest):
     Single-block encryption (max 16 bytes) without mode of operation.
     Consistent with S-box research methodology.
     """
-    from services.aes_service import aes_service
+    from backend.services.aes_service import aes_service
     
     try:
         # Determine constant
@@ -382,7 +382,7 @@ async def aes_decrypt(request: AESDecryptRequest):
     Single-block decryption without mode of operation.
     Input must be 32-character hex string (16 bytes).
     """
-    from services.aes_service import aes_service
+    from backend.services.aes_service import aes_service
     
     try:
         # Determine constant
@@ -432,7 +432,7 @@ async def encrypt_image(
     
     Returns the encrypted image as PNG.
     """
-    from services.image_encryption_service import image_encryption_service
+    from backend.services.image_encryption_service import image_encryption_service
     import json
     
     try:
@@ -480,7 +480,7 @@ async def decrypt_image(
     
     Returns the decrypted image as PNG.
     """
-    from services.image_encryption_service import image_encryption_service
+    from backend.services.image_encryption_service import image_encryption_service
     import json
     
     try:
@@ -524,7 +524,7 @@ async def analyze_image_encryption(
     
     Returns metrics: entropy, NPCR, UACI, and correlation coefficients.
     """
-    from services.image_analysis import analyze_encryption
+    from backend.services.image_analysis import analyze_encryption
     
     try:
         # Read image data
