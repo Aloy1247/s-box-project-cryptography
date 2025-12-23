@@ -30,6 +30,7 @@ export interface AnalysisMetrics {
 export interface AnalyzeRequest {
     matrixId: string | null;
     customMatrix: Matrix8x8 | null;
+    customSBox?: SBox16x16 | null;
     constant: string;
 }
 
@@ -60,6 +61,8 @@ export interface ImageEncryptionMetrics {
     correlationH: number | null;
     correlationV: number | null;
     correlationD: number | null;
+    histogramOriginal?: { r: number[]; g: number[]; b: number[] };
+    histogramEncrypted?: { r: number[]; g: number[]; b: number[] };
 }
 
 // Image Encryption Page State
@@ -101,6 +104,8 @@ export interface AppState {
     selectedMatrixId: string | null;
     customMatrix: Matrix8x8 | null;
     customFileName: string | null;
+    customSBox: SBox16x16 | null;
+    customSBoxFileName: string | null;
     constant: string;
 
     // View Mode

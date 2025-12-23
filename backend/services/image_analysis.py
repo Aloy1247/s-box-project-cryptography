@@ -11,7 +11,7 @@ Calculates security and quality metrics for image encryption:
 import numpy as np
 from PIL import Image
 import io
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import math
 
 
@@ -150,6 +150,36 @@ def calculate_correlation(image_data: bytes, num_samples: int = 1000) -> Dict[st
     }
 
 
+def calculate_histogram(image_data: bytes) -> Dict[str, List[int]]:
+    """
+    Calculate RGB histograms for an image.
+    
+    Args:
+        image_data: Image bytes
+        
+    Returns:
+        Dictionary with 'r', 'g', 'b' lists of 256 integers.
+    """
+    img = Image.open(io.BytesIO(image_data)).convert('RGB')
+    
+    # Calculate histogram
+    # histogram() returns a single list [r0..r255, g0..g255, b0..b255] for RGB
+    hist = img.histogram()
+    
+    # If image is not RGB (e.g. Grayscale), it might return 256 values.
+    # We force convert to RGB above, so it should be fine.
+    
+    if len(hist) < 768:
+        # Fallback if something weird happens (e.g. palette)
+        return {'r': [], 'g': [], 'b': []}
+        
+    return {
+        'r': hist[0:256],
+        'g': hist[256:512],
+        'b': hist[512:768]
+    }
+
+
 def analyze_encryption(original_data: bytes, encrypted_data: bytes) -> Dict[str, float]:
     """
     Perform complete analysis of encryption quality.
@@ -170,6 +200,10 @@ def analyze_encryption(original_data: bytes, encrypted_data: bytes) -> Dict[str,
     # Calculate correlation of encrypted image
     correlation = calculate_correlation(encrypted_data)
     
+    # Calculate histograms
+    hist_original = calculate_histogram(original_data)
+    hist_encrypted = calculate_histogram(encrypted_data)
+    
     return {
         'entropy': entropy,
         'npcr': npcr,
@@ -177,4 +211,6 @@ def analyze_encryption(original_data: bytes, encrypted_data: bytes) -> Dict[str,
         'correlationH': correlation['horizontal'],
         'correlationV': correlation['vertical'],
         'correlationD': correlation['diagonal'],
+        'histogramOriginal': hist_original,
+        'histogramEncrypted': hist_encrypted,
     }
